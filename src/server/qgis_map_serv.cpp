@@ -18,10 +18,10 @@
 
 //for CMAKE_INSTALL_PREFIX
 #include "qgsconfig.h"
+#include "qgsserverconfig.h"
 
 #include "qgsapplication.h"
 #include "qgscapabilitiescache.h"
-#include "qgsconfigcache.h"
 #include "qgsfontutils.h"
 #include "qgsgetrequesthandler.h"
 #include "qgspostrequesthandler.h"
@@ -31,19 +31,12 @@
 #include "qgswmsserver.h"
 #include "qgswfsserver.h"
 #include "qgswcsserver.h"
-#include "qgsmaprenderer.h"
 #include "qgsmapserviceexception.h"
 #include "qgspallabeling.h"
 #include "qgsnetworkaccessmanager.h"
 #include "qgsmaplayerregistry.h"
 #include "qgsserverlogger.h"
 #include "qgseditorwidgetregistry.h"
-
-#ifdef HAVE_SERVER_PYTHON_PLUGINS
-#include "qgsserverplugins.h"
-#include "qgsserverfilter.h"
-#include "qgsserverinterfaceimpl.h"
-#endif
 
 #include <QDomDocument>
 #include <QNetworkDiskCache>
@@ -243,9 +236,12 @@ QString configPath( const QString& defaultConfigPath, const QMap<QString, QStrin
   return cfPath;
 }
 
-
-int main( int argc, char * argv[] )
+/**
+ * Server initialization
+ */
+void qgis_map_serv_init(int argc, char * argv[], QgsServerConfig &serverConfig )
 {
+
 #ifndef _MSC_VER
   qInstallMsgHandler( dummyMessageHandler );
 #endif
@@ -306,25 +302,17 @@ int main( int argc, char * argv[] )
     }
   }
 
-  //create cache for capabilities XML
-  QgsCapabilitiesCache capabilitiesCache;
-
   //creating QgsMapRenderer is expensive (access to srs.db), so we do it here before the fcgi loop
-  QScopedPointer< QgsMapRenderer > theMapRenderer( new QgsMapRenderer );
-  theMapRenderer->setLabelingEngine( new QgsPalLabeling() );
+  //QScopedPointer< QgsMapRenderer > theMapRenderer( new QgsMapRenderer );
+  serverConfig.mapRenderer()->setLabelingEngine( new QgsPalLabeling() );
 
 #ifdef QGSMSDEBUG
   QgsFontUtils::loadStandardTestFonts( QStringList() << "Roman" << "Bold" );
 #endif
 
-  int logLevel = QgsServerLogger::instance()->logLevel();
-  QTime time; //used for measuring request time if loglevel < 1
-
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
-  // Create the interface
-  QgsServerInterfaceImpl serverIface( &capabilitiesCache );
   // Init plugins
-  if ( ! QgsServerPlugins::initPlugins( &serverIface ) )
+  if ( ! QgsServerPlugins::initPlugins( &serverConfig.serverInterface( ) ) )
   {
     QgsMessageLog::logMessage( "No server python plugins are available", "Server", QgsMessageLog::INFO );
   }
@@ -333,15 +321,26 @@ int main( int argc, char * argv[] )
     QgsMessageLog::logMessage( "Server python plugins loaded", "Server", QgsMessageLog::INFO );
   }
   // Store plugin filters for faster access
-  QMultiMap<int, QgsServerFilter*> pluginFilters = serverIface.filters();
+  serverConfig.initPluginFilters( );
 #endif
 
   QgsEditorWidgetRegistry::initEditors();
+}
 
+/**
+ * QGIS Server main loop
+ */
+void qgis_map_serv_run( QgsServerConfig &serverConfig ){
+
+  int logLevel = QgsServerLogger::instance()->logLevel();
+  QgsApplication* qgsapp = (QgsApplication*) QgsApplication::instance();
+  QTime time; //used for measuring request time if loglevel < 1
+
+  // Starts FCGI loop
   while ( fcgi_accept() >= 0 )
   {
     QgsMapLayerRegistry::instance()->removeAllMapLayers();
-    qgsapp.processEvents();
+    qgsapp->processEvents();
 
     if ( logLevel < 1 )
     {
@@ -365,10 +364,10 @@ int main( int argc, char * argv[] )
 
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
     // Set the request handler into the interface for plugins to manipulate it
-    serverIface.setRequestHandler( theRequestHandler.data() );
+    serverConfig.serverInterface().setRequestHandler( theRequestHandler.data() );
     // Iterate filters and call their requestReady() method
     QgsServerFiltersMap::const_iterator filtersIterator;
-    for ( filtersIterator = pluginFilters.constBegin(); filtersIterator != pluginFilters.constEnd(); ++filtersIterator )
+    for ( filtersIterator = serverConfig.pluginFilters().constBegin(); filtersIterator != serverConfig.pluginFilters().constEnd(); ++filtersIterator )
     {
       filtersIterator.value()->requestReady();
     }
@@ -379,7 +378,7 @@ int main( int argc, char * argv[] )
 
     //TODO: implement this in the requestHandler ctor (far easier if we will get rid of
     //      HAVE_SERVER_PYTHON_PLUGINS
-    theRequestHandler->setPluginFilters( pluginFilters );
+    theRequestHandler->setPluginFilters( serverConfig.pluginFilters( ) );
 #endif
 
     // Copy the parameters map
@@ -388,11 +387,11 @@ int main( int argc, char * argv[] )
     printRequestParameters( parameterMap, logLevel );
     QMap<QString, QString>::const_iterator paramIt;
     //Config file path
-    QString configFilePath = configPath( defaultConfigFilePath, parameterMap );
+    QString configFilePath = configPath( serverConfig.configFilePath(), parameterMap );
 
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
     // Pass the path to server interface
-    serverIface.setConfigFilePath( configFilePath );
+    serverConfig.setConfigFilePath( configFilePath );
 #endif
 
     //Service parameter
@@ -413,40 +412,40 @@ int main( int argc, char * argv[] )
     {
       if ( serviceString == "WCS" )
       {
-        QgsWCSProjectParser* p = QgsConfigCache::instance()->wcsConfiguration( configFilePath );
+        QgsWCSProjectParser* p = QgsConfigCache::instance()->wcsConfiguration( serverConfig.configFilePath( ) );
         if ( !p )
         {
           theRequestHandler->setServiceException( QgsMapServiceException( "Project file error", "Error reading the project file" ) );
         }
         else
         {
-          QgsWCSServer wcsServer( configFilePath, parameterMap, p, theRequestHandler.data() );
+          QgsWCSServer wcsServer( serverConfig.configFilePath( ), parameterMap, p, theRequestHandler.data() );
           wcsServer.executeRequest();
         }
       }
       else if ( serviceString == "WFS" )
       {
-        QgsWFSProjectParser* p = QgsConfigCache::instance()->wfsConfiguration( configFilePath );
+        QgsWFSProjectParser* p = QgsConfigCache::instance()->wfsConfiguration( serverConfig.configFilePath( ) );
         if ( !p )
         {
           theRequestHandler->setServiceException( QgsMapServiceException( "Project file error", "Error reading the project file" ) );
         }
         else
         {
-          QgsWFSServer wfsServer( configFilePath, parameterMap, p, theRequestHandler.data() );
+          QgsWFSServer wfsServer(  serverConfig.configFilePath( ), parameterMap, p, theRequestHandler.data() );
           wfsServer.executeRequest();
         }
       }
       else if ( serviceString == "WMS" )
       {
-        QgsWMSConfigParser* p = QgsConfigCache::instance()->wmsConfiguration( configFilePath, parameterMap );
+        QgsWMSConfigParser* p = QgsConfigCache::instance()->wmsConfiguration(  serverConfig.configFilePath( ), parameterMap );
         if ( !p )
         {
           theRequestHandler->setServiceException( QgsMapServiceException( "WMS configuration error", "There was an error reading the project file or the SLD configuration" ) );
         }
         else
         {
-          QgsWMSServer wmsServer( configFilePath, parameterMap, p, theRequestHandler.data(), theMapRenderer.data(), &capabilitiesCache );
+          QgsWMSServer wmsServer(  serverConfig.configFilePath( ), parameterMap, p, theRequestHandler.data(), serverConfig.mapRenderer(), & serverConfig.capabilitiesCache( ) );
           wmsServer.executeRequest();
         }
       }
@@ -458,7 +457,7 @@ int main( int argc, char * argv[] )
 
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
     // Iterate filters and call their responseComplete() method
-    for ( filtersIterator = pluginFilters.constBegin(); filtersIterator != pluginFilters.constEnd(); ++filtersIterator )
+    for ( filtersIterator = serverConfig.pluginFilters().constBegin(); filtersIterator != serverConfig.pluginFilters().constEnd(); ++filtersIterator )
     {
       filtersIterator.value()->responseComplete();
     }
@@ -470,5 +469,13 @@ int main( int argc, char * argv[] )
       QgsMessageLog::logMessage( "Request finished in " + QString::number( time.elapsed() ) + " ms", "Server", QgsMessageLog::INFO );
     }
   }
+}
+
+
+int main( int argc, char * argv[] )
+{
+  QgsServerConfig serverConfig;
+  qgis_map_serv_init(argc, argv, serverConfig );
+  qgis_map_serv_run( serverConfig );
   return 0;
 }
