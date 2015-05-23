@@ -1,5 +1,5 @@
 /***************************************************************************
-                          qgsserverconfig.h
+                          qgsservercontext.h
  Configuration for Qgis Mapserver
                           -------------------
   begin                : 2015-05-20
@@ -16,10 +16,11 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef QGSSERVERCONFIG_H
-#define QGSSERVERCONFIG_H
+#ifndef QGSSERVERCONTEXT_H
+#define QGSSERVERCONTEXT_H
 
 #include "qgsconfig.h"
+#include "qgsapplication.h"
 #include "qgsmaprenderer.h"
 #include "qgsconfigcache.h"
 #include "qgscapabilitiescache.h"
@@ -30,15 +31,22 @@
 #include "qgsserverinterfaceimpl.h"
 #endif
 
-class SERVER_EXPORT QgsServerConfig
+/**
+ * QgsServerContext
+ * Class to store the server context
+ *
+ */
+class SERVER_EXPORT QgsServerContext
 {
   public:
-    QgsServerConfig();
-    ~QgsServerConfig();
+    QgsServerContext();
+    ~QgsServerContext();
     void setConfigFilePath( QString const configFilePath );
     QString configFilePath( ) { return mConfigFilePath; }
     QgsCapabilitiesCache& capabilitiesCache( ) { return mCapabilitiesCache; }
     QgsMapRenderer* mapRenderer( ) { return mMapRenderer.data(); }
+    void initQgsApplication( int & argc, char ** argv, const char* display );
+    QgsApplication* qgsApplication ( ) { return mQgsApplication; }
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
     QgsServerInterfaceImpl& serverInterface( ) { return mServerInterface; }
     QMultiMap<int, QgsServerFilter*> pluginFilters( ) { return mPluginFilters; }
@@ -49,10 +57,11 @@ class SERVER_EXPORT QgsServerConfig
     QString mConfigFilePath;
     QgsCapabilitiesCache mCapabilitiesCache;
     QScopedPointer< QgsMapRenderer > mMapRenderer;
+    QgsApplication* mQgsApplication;
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
     QgsServerInterfaceImpl mServerInterface;
     QMultiMap<int, QgsServerFilter*> mPluginFilters;
 #endif
 };
 
-#endif // QGSSERVERCONFIG_H
+#endif // QGSSERVERCONTEXT_H

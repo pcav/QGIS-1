@@ -1,10 +1,10 @@
 /***************************************************************************
-                              qgsgetrequesthandler.h
-                 class for reading from/ writing to HTTP GET
-                              -------------------
-  begin                : May 16, 2006
-  copyright            : (C) 2006 by Marco Hugentobler & Ionut Iosifescu
-  email                : marco dot hugentobler at karto dot baug dot ethz dot ch
+                          qgsserver.sip
+ Qgis Mapserver
+                          -------------------
+  begin                : 2015-05-21
+  copyright            : (C) 2015 by Alessandro Pasotti
+  email                : a dot pasotti at itopen dot it
  ***************************************************************************/
 
 /***************************************************************************
@@ -16,17 +16,24 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "qgshttprequesthandler.h"
-
-#ifndef QGSGETPREQUESTHANDLER_H
-#define QGSGETPREQUESTHANDLER_H
 
 
-class QgsGetRequestHandler: public QgsHttpRequestHandler
+class QgsServer
 {
-  public:
-    QgsGetRequestHandler( const bool captureOutput = FALSE );
-    void parseInput() override;
-};
+%TypeHeaderCode
+#include "qgsserver.h"
+%End
 
-#endif
+  public:
+    QgsServer();
+    ~QgsServer();
+    //void init( int argc, char* argv[] );
+    void init( );
+    QByteArray handleRequest( const QString queryString = QString( ));
+
+  // The following is needed because otherwise SIP fails trying to create copy
+  // ctor
+  private:
+    QgsServer( const QgsServer& );
+    QgsServer & operator=( const QgsServer& );
+};

@@ -16,6 +16,7 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifdef HAVE_SERVER_PYTHON_PLUGINS
 #ifndef QGSSERVERINTERFACE_H
 #define QGSSERVERINTERFACE_H
 
@@ -57,3 +58,4 @@ class SERVER_EXPORT QgsServerInterface
 };
 
 #endif // QGSSERVERINTERFACE_H
+#endif // HAVE_SERVER_PYTHON_PLUGINS

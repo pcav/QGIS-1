@@ -172,7 +172,13 @@ ADD_SIP_PYTHON_MODULE(qgis._gui gui/gui.sip qgis_core qgis_gui)
 SET(PY_MODULES core gui analysis networkanalysis)
 
 # server module
-IF (WITH_SERVER AND WITH_SERVER_PLUGINS)
+IF (WITH_SERVER)
+
+
+  IF(NOT HAVE_SERVER_PYTHON_PLUGINS)
+    SET(SIP_DISABLE_FEATURES ${SIP_DISABLE_FEATURES} HAVE_SERVER_PYTHON_PLUGINS)
+  ENDIF(NOT HAVE_SERVER_PYTHON_PLUGINS)
+
   INCLUDE_DIRECTORIES(
     ../src/server
    ${CMAKE_BINARY_DIR}/src/server
@@ -181,12 +187,12 @@ IF (WITH_SERVER AND WITH_SERVER_PLUGINS)
   SET(PY_MODULES ${PY_MODULES} server)
 
   FILE(GLOB sip_files_server
-    server/*.sip
+    server/server.sip
   )
   SET(SIP_EXTRA_FILES_DEPEND ${sip_files_core} ${sip_files_server})
   SET(SIP_EXTRA_OPTIONS ${PYQT4_SIP_FLAGS} -o -a ${CMAKE_BINARY_DIR}/python/qgis.server.api)
   ADD_SIP_PYTHON_MODULE(qgis._server server/server.sip qgis_core qgis_server)
-ENDIF (WITH_SERVER AND WITH_SERVER_PLUGINS)
+ENDIF (WITH_SERVER)
 
 # additional analysis includes
 INCLUDE_DIRECTORIES(

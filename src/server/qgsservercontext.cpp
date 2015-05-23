@@ -1,5 +1,5 @@
 /***************************************************************************
-                          qgsserverconfig.cpp
+                          qgsservercontext.cpp
  Configuration for Qgis Mapserver
                           -------------------
   begin                : 2015-05-20
@@ -16,32 +16,38 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "qgsserverconfig.h"
+#include "qgsservercontext.h"
 
-QgsServerConfig::QgsServerConfig()
+QgsServerContext::QgsServerContext()
   : mMapRenderer( new QgsMapRenderer )
+  , mQgsApplication ( NULL )
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
   , mServerInterface ( &mCapabilitiesCache )
 #endif
 {
 }
 
-QgsServerConfig::~QgsServerConfig()
+QgsServerContext::~QgsServerContext()
 {
+  delete mQgsApplication;
 }
 
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
-
-void QgsServerConfig::initPluginFilters( )
+void QgsServerContext::initPluginFilters( )
 {
   mPluginFilters = mServerInterface.filters();
 }
 #endif
 
-void QgsServerConfig::setConfigFilePath( QString const configFilePath )
+void QgsServerContext::setConfigFilePath( QString const configFilePath )
 {
   mConfigFilePath = configFilePath;
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
   mServerInterface.setConfigFilePath( configFilePath );
 #endif
+}
+
+void QgsServerContext::initQgsApplication( int & argc, char ** argv, const char* display )
+{
+  mQgsApplication = new QgsApplication( argc, argv, display );
 }

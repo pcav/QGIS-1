@@ -16,6 +16,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifdef HAVE_SERVER_PYTHON_PLUGINS
+
 #ifndef QGSSERVERFILTER_H
 #define QGSSERVERFILTER_H
 
@@ -74,5 +76,5 @@ class SERVER_EXPORT QgsServerFilter
 
 typedef QMultiMap<int, QgsServerFilter*> QgsServerFiltersMap;
 
-
 #endif // QGSSERVERFILTER_H
+#endif // HAVE_SERVER_PYTHON_PLUGINS

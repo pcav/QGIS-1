@@ -15,10 +15,13 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifdef HAVE_SERVER_PYTHON_PLUGINS
+
 #include "qgsserverplugins.h"
 #include "qgsmapserviceexception.h"
 #include "qgsapplication.h"
 #include "qgslogger.h"
+#include "qgspythonutils.h"
 #include "qgsserverlogger.h"
 #include "qgsmsutils.h"
 
@@ -115,3 +118,5 @@ bool QgsServerPlugins::initPlugins( QgsServerInterface *interface )
   }
   return mPythonUtils && mPythonUtils->isEnabled() && atLeastOneEnabled;
 }
+
+#endif // HAVE_SERVER_PYTHON_PLUGINS
