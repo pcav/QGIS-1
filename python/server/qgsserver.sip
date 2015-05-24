@@ -29,8 +29,13 @@ class QgsServer
     ~QgsServer();
     //void init( int argc, char* argv[] );
     void init( );
-    QByteArray handleRequest( const QString queryString = QString( ));
-
+    QByteArray handleRequest( const QString queryString = QString( ) );
+    // TODO: if HAVE_SERVER_PYTHON
+    QByteArray handleRequest( const QString queryString,
+                              const bool returnBody,
+                              const bool returnHeaders );
+    QByteArray handleRequestGetBody( const QString queryString = QString( ) );
+    QByteArray handleRequestGetHeaders( const QString queryString = QString( ) );
   // The following is needed because otherwise SIP fails trying to create copy
   // ctor
   private:

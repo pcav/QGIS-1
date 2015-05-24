@@ -214,9 +214,17 @@ void QgsHttpRequestHandler::sendResponse()
   clearBody();
 }
 
-QByteArray QgsHttpRequestHandler::getResponse( )
+QByteArray QgsHttpRequestHandler::getResponse( const bool returnHeaders,
+                                               const bool returnBody)
 {
-  return mResponseHeader.append( mResponseBody );
+  if ( ! returnHeaders )
+  {
+    return  mResponseBody;
+  } else if ( ! returnBody ) {
+    return mResponseHeader;
+  } else {
+    return mResponseHeader.append( mResponseBody );
+  }
 }
 
 QString QgsHttpRequestHandler::formatToMimeType( const QString& format ) const

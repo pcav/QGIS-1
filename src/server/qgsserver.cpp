@@ -342,19 +342,39 @@ void QgsServer::init(int & argc, char ** argv)
   mInitialised = TRUE;
 }
 
+
 /**
  * Handles the request
  */
 QByteArray QgsServer::handleRequest( const QString queryString /*= QString( )*/ ){
+    return handleRequest( queryString, TRUE, TRUE );
+}
 
+QByteArray QgsServer::handleRequestGetBody( const QString queryString /*= QString( )*/ )
+{
+  return handleRequest( queryString, FALSE, TRUE );
+}
+
+QByteArray QgsServer::handleRequestGetHeaders( const QString queryString /*= QString( )*/ )
+{
+  return handleRequest( queryString, TRUE, FALSE );
+}
+
+/**
+ * Handles the request
+ */
+QByteArray QgsServer::handleRequest(const QString queryString ,
+                                    bool returnBody,
+                                    bool returnHeaders ){
+
+  // TODO: if HAVE_SERVER_PYTHON
   // Run init if handleRequest was called without previously initialising
   // the server
   if ( ! mInitialised )
   {
     init( );
   }
-  // TODO: if HAVE_SERVER_PYTHON
-  /**
+  /*
    * This is intendend to be used in python bindings, passing QUERY_STRING
    * to handleRequest without using os.environment
    */
@@ -490,6 +510,6 @@ QByteArray QgsServer::handleRequest( const QString queryString /*= QString( )*/ 
   }
   // TODO: if HAVE_SERVER_PYTHON
   // Returns the response bytestream
-  return theRequestHandler->getResponse();
+  return theRequestHandler->getResponse( returnBody , returnHeaders );
 }
 

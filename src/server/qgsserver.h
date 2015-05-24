@@ -36,37 +36,53 @@ class  SERVER_EXPORT QgsServer
   public:
     QgsServer();
     ~QgsServer();
-    /** Server initalisation: intialize QGIS ang QT core application.
-     This method is automatically called by
-     handleRequest if it wasn't explicitly called before */
-    void init();
+    /** Server initialisation: intialise QGIS ang QT core application.
+     * This method is automatically called by handleRequest if it wasn't
+     * explicitly called before */
     void init(int & argc, char ** argv);
     // TODO: if HAVE_SERVER_PYTHON
+    // The following is used by python bindings, that do not pass argc/argv
+    void init();
 
-    /* Handles the request and prints the output through FCGI printf or, in
-       case the server has been invoked from python bindings,it returns
-       the output. The qyery string is normally read from environment
-       but can be also passed in and in this case overrides the environment
-       variable */
+    /** Handles the request. The output is normally printed trough FCGI printf
+     * by the request handler or, in case the server has been invoked from python
+     * bindings, a flag is set that capures all the output headers abd body instead
+     * of printing it returns the output as a QByteArray.
+     * When calling handleRequest() from python bindings a additional argument
+     * specify if we only want the headers or the body back, this is mainly useful
+     * for testing purposes.
+     * The query string is normally read from environment
+     * but can be also passed in and in this case overrides the environment
+     * variable */
     QByteArray handleRequest( const QString queryString = QString( ) );
+    // TODO: if HAVE_SERVER_PYTHON
+    QByteArray handleRequest( const QString queryString,
+                              const bool returnBody,
+                              const bool returnHeaders );
+    QByteArray handleRequestGetBody( const QString queryString = QString( ) );
+    QByteArray handleRequestGetHeaders( const QString queryString = QString( ) );
 
   private:
     // All functions that where previously in the main file are now
     // static methods of this class
     static QString configPath( const QString& defaultConfigPath,
                                    const QMap<QString, QString>& parameters );
+    // Mainly for debug
     static void dummyMessageHandler( QtMsgType type, const char *msg );
+    // Mainly for debug
     static void printRequestInfos();
+    // Mainly for debug
     static void printRequestParameters(
           const QMap< QString, QString>& parameterMap,
           int logLevel );
     static QFileInfo defaultProjectFile();
     static QFileInfo defaultAdminSLD();
     static void setupNetworkAccessManager();
+    /** Created and returns a request handler instance */
     static QgsRequestHandler* createRequestHandler(
           const bool captureOutput = FALSE );
 
-    // Instance status
+    // Instance status    
     bool mInitialised;
     QgsServerContext mServerContext;
     QString mServerName;

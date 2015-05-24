@@ -108,7 +108,8 @@ class QgsRequestHandler
     // TODO: if HAVE_SERVER_PYTHON
     virtual QByteArray getResponseHeader( ) = 0;
     virtual QByteArray getResponseBody( ) = 0;
-    virtual QByteArray getResponse( ) = 0;
+    virtual QByteArray getResponse( const bool returnHeaders = TRUE,
+                            const bool returnBody = TRUE) = 0;
 
   protected:
     virtual void sendHeaders( ) = 0;

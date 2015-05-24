@@ -63,9 +63,11 @@ class QgsHttpRequestHandler: public QgsRequestHandler
     virtual void setPluginFilters( QgsServerFiltersMap pluginFilters ) override;
 #endif
     // TODO: if HAVE_SERVER_PYTHON
-    QByteArray getResponseHeader( ) { return mResponseHeader; };
-    QByteArray getResponseBody( ) { return mResponseBody; };
-    QByteArray getResponse( );
+    QByteArray getResponseHeader( ) { return mResponseHeader; }
+    QByteArray getResponseBody( ) { return mResponseBody; }
+    /** Return the response if capture output is activated */
+    QByteArray getResponse( const bool returnHeaders = TRUE,
+                            const bool returnBody = TRUE);
 
   protected:
     virtual void sendHeaders( ) override;
