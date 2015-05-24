@@ -350,22 +350,37 @@ QByteArray QgsServer::handleRequest( const QString queryString /*= QString( )*/ 
     return handleRequest( queryString, TRUE, TRUE );
 }
 
+/**
+ * @brief Handles the request, returning only the body
+ * @param queryString
+ * @return response body if mCaptureOutput is set, empty QByteArray if not
+ */
 QByteArray QgsServer::handleRequestGetBody( const QString queryString /*= QString( )*/ )
 {
   return handleRequest( queryString, FALSE, TRUE );
 }
 
+/**
+ * @brief Handles the request, returning only the headers
+ * @param queryString
+ * @return response headers if mCaptureOutput is set, empty QByteArray if not
+ */
 QByteArray QgsServer::handleRequestGetHeaders( const QString queryString /*= QString( )*/ )
 {
   return handleRequest( queryString, TRUE, FALSE );
 }
 
 /**
- * Handles the request
+ * @brief Handles the request
+ * @param queryString
+ * @param returnBody
+ * @param returnHeaders
+ * @return response body and headers if mCaptureOutput is set and the
+ * flags are set, empty QByteArray if not
  */
 QByteArray QgsServer::handleRequest(const QString queryString ,
-                                    bool returnBody,
-                                    bool returnHeaders ){
+                                    bool returnHeaders,
+                                    bool returnBody){
 
   // TODO: if HAVE_SERVER_PYTHON
   // Run init if handleRequest was called without previously initialising
@@ -510,6 +525,6 @@ QByteArray QgsServer::handleRequest(const QString queryString ,
   }
   // TODO: if HAVE_SERVER_PYTHON
   // Returns the response bytestream
-  return theRequestHandler->getResponse( returnBody , returnHeaders );
+  return theRequestHandler->getResponse( returnHeaders , returnBody );
 }
 

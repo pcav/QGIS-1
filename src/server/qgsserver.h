@@ -57,8 +57,8 @@ class  SERVER_EXPORT QgsServer
     QByteArray handleRequest( const QString queryString = QString( ) );
     // TODO: if HAVE_SERVER_PYTHON
     QByteArray handleRequest( const QString queryString,
-                              const bool returnBody,
-                              const bool returnHeaders );
+                              const bool returnHeaders,
+                              const bool returnBody );
     QByteArray handleRequestGetBody( const QString queryString = QString( ) );
     QByteArray handleRequestGetHeaders( const QString queryString = QString( ) );
 
