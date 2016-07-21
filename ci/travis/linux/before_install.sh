@@ -60,6 +60,7 @@ sudo apt-get install --force-yes --no-install-recommends --no-install-suggests \
         flip \
         jq 
 
+# Install postgis 2.2
 sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install postgresql-9.4-postgis-2.2
 sudo -H pip install autopep8 # TODO when switching to trusty or above: replace python-pip with python-autopep8
 sudo -H pip install nose2 pyyaml mock
