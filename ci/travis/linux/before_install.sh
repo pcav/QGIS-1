@@ -1,7 +1,7 @@
 export DEBIAN_FRONTEND=noninteractive
 
 sudo add-apt-repository ppa:ubuntugis/ppa -y
-sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable -y # For postgresql-9.1-postgis-2.1
+#sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable -y # For postgresql-9.1-postgis-2.1
 sudo add-apt-repository ppa:smspillaz/cmake-3.0.2 -y
 sudo add-apt-repository ppa:kedazo/doxygen-updates-precise -y # For doxygen 1.8.8
 sudo apt-get update -qq
@@ -58,8 +58,8 @@ sudo apt-get install --force-yes --no-install-recommends --no-install-suggests \
         xvfb \
         python-pip \
         flip \
-        jq \
-        postgresql-9.1-postgis-2.1/precise # from ubuntugis-unstable, not pgdg
+        jq 
 
+sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install postgresql-9.4-postgis-2.2
 sudo -H pip install autopep8 # TODO when switching to trusty or above: replace python-pip with python-autopep8
 sudo -H pip install nose2 pyyaml mock
