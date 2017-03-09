@@ -76,6 +76,7 @@ SET(QGIS_CORE_SRCS
   auth/qgsauthmanager.cpp
   auth/qgsauthmethodmetadata.cpp
   auth/qgsauthmethodregistry.cpp
+  auth/qgsauthpasswordhelper.cpp
 
   annotations/qgsannotation.cpp
   annotations/qgsannotationmanager.cpp
@@ -551,6 +552,7 @@ SET(QGIS_CORE_MOC_HDRS
 
   auth/qgsauthmanager.h
   auth/qgsauthmethod.h
+  auth/qgsauthpasswordhelper.h
 
   composer/qgsaddremoveitemcommand.h
   composer/qgsatlascomposition.h
@@ -797,6 +799,7 @@ SET(QGIS_CORE_HDRS
   auth/qgsauthmethod.h
   auth/qgsauthmethodmetadata.h
   auth/qgsauthmethodregistry.h
+  auth/qgsauthpasswordhelper.h
 
   diagram/qgsdiagram.h
   diagram/qgspiediagram.h
@@ -1056,7 +1059,7 @@ TARGET_LINK_LIBRARIES(qgis_core
   ${OPTIONAL_QTWEBKIT}
   ${QT_QTSQL_LIBRARY}
   ${QCA_LIBRARY}
-
+  ${QTKEYCHAIN_LIBRARY}
   ${PROJ_LIBRARY}
   ${GEOS_LIBRARY}
   ${GDAL_LIBRARY}
