@@ -76,7 +76,6 @@ SET(QGIS_CORE_SRCS
   auth/qgsauthmanager.cpp
   auth/qgsauthmethodmetadata.cpp
   auth/qgsauthmethodregistry.cpp
-  auth/qgsauthpasswordhelper.cpp
 
   annotations/qgsannotation.cpp
   annotations/qgsannotationmanager.cpp
@@ -552,7 +551,6 @@ SET(QGIS_CORE_MOC_HDRS
 
   auth/qgsauthmanager.h
   auth/qgsauthmethod.h
-  auth/qgsauthpasswordhelper.h
 
   composer/qgsaddremoveitemcommand.h
   composer/qgsatlascomposition.h

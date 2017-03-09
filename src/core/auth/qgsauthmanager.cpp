@@ -37,6 +37,10 @@
 #include <QSslConfiguration>
 #endif
 
+// QtKeyChain library
+#include "qtkeychain/keychain.h"
+
+// QGIS includes
 #include "qgsapplication.h"
 #include "qgsauthcertutils.h"
 #include "qgsauthcrypto.h"
@@ -45,6 +49,8 @@
 #include "qgsauthmethodregistry.h"
 #include "qgscredentials.h"
 #include "qgslogger.h"
+#include "qgsmessagelog.h"
+#include "qgssettings.h"
 
 QgsAuthManager *QgsAuthManager::sInstance = nullptr;
 
@@ -57,6 +63,24 @@ const QString QgsAuthManager::AUTH_AUTHORITIES_TABLE = QStringLiteral( "auth_aut
 const QString QgsAuthManager::AUTH_TRUST_TABLE = QStringLiteral( "auth_trust" );
 const QString QgsAuthManager::AUTH_MAN_TAG = QObject::tr( "Authentication Manager" );
 const QString QgsAuthManager::AUTH_CFG_REGEX = QStringLiteral( "authcfg=([a-z]|[A-Z]|[0-9]){7}" );
+
+
+const QLatin1String QgsAuthManager::AUTH_PASSWORD_HELPER_KEY_NAME( "QGIS-Master-Password" );
+const QLatin1String QgsAuthManager::AUTH_PASSWORD_FOLDER_DISPLAY_NAME( "QGIS" );
+
+#if defined(Q_OS_MAC)
+const QString QgsAuthManager::AUTH_PASSWORD_HELPER_DISPLAY_NAME( "KeyChain" );
+static const QString sDescription = QObject::tr( "Master Password <-> KeyChain storage plugin. Store and retrieve your master password in your KeyChain" );
+#elif defined(Q_OS_WIN)
+const QString QgsAuthManager::AUTH_PASSWORD_HELPER_DISPLAY_NAME( "Password Manager" );
+static const QString sDescription = QObject::tr( "Master Password <-> Password Manager storage plugin. Store and retrieve your master password in your Password Manager" );
+#elif defined(Q_OS_LINUX)
+const QString QgsAuthManager::AUTH_PASSWORD_HELPER_DISPLAY_NAME( "Wallet/KeyRing" );
+static const QString sDescription = QObject::tr( "Master Password <-> Wallet/KeyRing storage plugin. Store and retrieve your master password in your Wallet/KeyRing" );
+#else
+const QString QgsAuthManager::AUTH_PASSWORD_HELPER_DISPLAY_NAME( "Password Manager" );
+static const QString sDescription = QObject::tr( "Master Password <-> KeyChain storage plugin. Store and retrieve your master password in your Wallet/KeyChain/Password Manager" );
+#endif
 
 
 QgsAuthManager *QgsAuthManager::instance()
@@ -2821,6 +2845,14 @@ QgsAuthManager::QgsAuthManager()
   , mScheduledDbEraseRequestCount( 0 )
   , mMutex( nullptr )
   , mIgnoredSslErrorsCache( QHash<QString, QSet<QSslError::SslError> >() )
+  , mUsePasswordHelper( true )
+  , mPasswordHelperVerificationError( false )
+  , mPasswordHelperErrorMessage( "" )
+  , mPasswordHelperErrorCode( QKeychain::NoError )
+  , mPasswordHelperIsDirty( true )
+  , mPasswordHelperLoggingEnabled( false )
+  , mPasswordHelperFailedInit( false )
+
 {
   mMutex = new QMutex( QMutex::Recursive );
   connect( this, SIGNAL( messageOut( const QString &, const QString &, QgsAuthManager::MessageLevel ) ),
@@ -2847,20 +2879,195 @@ QgsAuthManager::~QgsAuthManager()
   QSqlDatabase::removeDatabase( QStringLiteral( "authentication.configs" ) );
 }
 
+
+const QString QgsAuthManager::passwordHelperName()
+{
+  return QStringLiteral( "Password Helper" );
+}
+
+
+void QgsAuthManager::passwordHelperDebug( QString msg )
+{
+  if ( passwordHelperLoggingEnabled( ) )
+  {
+    QgsMessageLog::logMessage( msg, passwordHelperName() );
+  }
+}
+
+bool QgsAuthManager::passwordHelperDelete()
+{
+  passwordHelperDebug( "Opening wallet for DELETE ..." );
+  QKeychain::DeletePasswordJob job( AUTH_PASSWORD_FOLDER_DISPLAY_NAME );
+  job.setAutoDelete( false );
+  job.setKey( AUTH_PASSWORD_HELPER_KEY_NAME );
+  QEventLoop loop;
+  job.connect( &job, SIGNAL( finished( QKeychain::Job * ) ), &loop, SLOT( quit() ) );
+  job.start();
+  loop.exec();
+  if ( job.error() )
+  {
+    passwordHelperSetErrorCode( job.error() );
+    passwordHelperSetErrorMessage( QString( tr( "Delete password failed: %1." ) ).arg( job.errorString() ) );
+    passwordHelperSetIsDirty( true );
+    return false;
+  }
+  else
+  {
+    passwordHelperSetIsDirty( false );
+    passwordHelperClearErrors();
+    return true;
+  }
+}
+
+
+void QgsAuthManager::passwordHelperReadSettings()
+{
+  QgsSettings settings;
+  setUsePasswordHelper( settings.value( QString( "%1/useWallet" ).arg( passwordHelperName() ), true ).toBool() );
+  passwordHelperSetLoggingEnabled( settings.value( QString( "%1/loggingEnabled" ).arg( passwordHelperName() ), false ).toBool() );
+}
+
+void QgsAuthManager::passwordHelperWriteSettings()
+{
+  QgsSettings settings;
+  settings.setValue( QString( "%1/useWallet" ).arg( passwordHelperName() ), usePasswordHelper( ) );
+  settings.setValue( QString( "%1/loggingEnabled" ).arg( passwordHelperName() ), passwordHelperLoggingEnabled( ) );
+}
+
+
+QString QgsAuthManager::passwordHelperRead()
+{
+  // Retrieve it!
+  QString password( "" );
+  passwordHelperDebug( "Opening wallet for READ ..." );
+  QKeychain::ReadPasswordJob job( AUTH_PASSWORD_FOLDER_DISPLAY_NAME );
+  job.setAutoDelete( false );
+  job.setKey( AUTH_PASSWORD_HELPER_KEY_NAME );
+  QEventLoop loop;
+  job.connect( &job, SIGNAL( finished( QKeychain::Job * ) ), &loop, SLOT( quit() ) );
+  job.start();
+  loop.exec();
+  if ( job.error() )
+  {
+    passwordHelperSetErrorCode( job.error() );
+    passwordHelperSetErrorMessage( QString( tr( "Retrieving password from the %1 failed: %2." ) ).arg( job.errorString(), AUTH_PASSWORD_HELPER_DISPLAY_NAME ) );
+    passwordHelperProcessError();
+  }
+  else
+  {
+    password = job.textData();
+    // Password is there but it is empty, treat it like if it were not found
+    if ( password.isEmpty() )
+    {
+      passwordHelperSetErrorCode( QKeychain::EntryNotFound );
+      passwordHelperSetErrorMessage( tr( "Empty password retrieved from the %1." ).arg( AUTH_PASSWORD_HELPER_DISPLAY_NAME ) );
+      passwordHelperProcessError();
+    }
+    else
+    {
+      passwordHelperClearErrors();
+    }
+  }
+  return password;
+}
+
+bool QgsAuthManager::passwordHelperWrite( QString password )
+{
+
+  Q_ASSERT( !password.isEmpty() );
+  passwordHelperDebug( "Opening wallet for WRITE ..." );
+  QKeychain::WritePasswordJob job( AUTH_PASSWORD_FOLDER_DISPLAY_NAME );
+  job.setAutoDelete( false );
+  job.setKey( AUTH_PASSWORD_HELPER_KEY_NAME );
+  job.setTextData( password );
+  QEventLoop loop;
+  job.connect( &job, SIGNAL( finished( QKeychain::Job * ) ), &loop, SLOT( quit() ) );
+  job.start();
+  loop.exec();
+  if ( job.error() )
+  {
+    passwordHelperSetErrorCode( job.error() );
+    passwordHelperSetErrorMessage( QString( tr( "Storing password in the %1 failed: %2." ) ).arg( AUTH_PASSWORD_HELPER_DISPLAY_NAME, job.errorString() ) );
+    passwordHelperSetIsDirty( true );
+    passwordHelperProcessError( );
+    return false;
+  }
+  else
+  {
+    passwordHelperSetIsDirty( false );
+    passwordHelperClearErrors();
+    return true;
+  }
+}
+
+void QgsAuthManager::passwordHelperClearErrors()
+{
+  passwordHelperSetErrorCode( QKeychain::NoError );
+  passwordHelperSetErrorMessage( "" );
+}
+
+// If the error is permanent or the user denied access to the wallet
+// we also want to disable the wallet system to prevent annoying
+// notification on each subsequent access try.
+void QgsAuthManager::passwordHelperProcessError()
+{
+  if ( passwordHelperErrorCode() == QKeychain::AccessDenied ||
+       passwordHelperErrorCode() == QKeychain::AccessDeniedByUser ||
+       passwordHelperErrorCode() == QKeychain::NoBackendAvailable ||
+       passwordHelperErrorCode() == QKeychain::NotImplemented )
+  {
+    setUsePasswordHelper( false );
+    passwordHelperSetErrorMessage( QString( tr( "There was an error and the %1 system has been disabled, you can re-enable it at any time through the menus. %2" ).arg( AUTH_PASSWORD_HELPER_DISPLAY_NAME ).arg( passwordHelperErrorMessage( ) ) ) );
+  }
+  else if ( passwordHelperErrorCode() != QKeychain::NoError )
+  {
+    // We've got an error from the wallet
+    emit messageOut( passwordHelperErrorMessage( ), authManTag(), CRITICAL );
+  }
+  passwordHelperClearErrors();
+}
+
+
 bool QgsAuthManager::masterPasswordInput()
 {
   if ( isDisabled() )
     return false;
 
   QString pass;
-  QgsCredentials *creds = QgsCredentials::instance();
-  creds->lock();
-  bool ok = creds->getMasterPassword( pass, masterPasswordHashInDatabase() );
-  creds->unlock();
+  bool ok = false;
+
+  // Get password from the wallet
+  if ( mUsePasswordHelper )
+  {
+    pass = passwordHelperRead( );
+    if ( ! pass.isEmpty( ) && ( passwordHelperErrorCode( ) == QKeychain::NoError ) )
+    {
+      ok = true;
+      emit messageOut( QString( tr( "Master password has been successfully read from the %1" ) ).arg( AUTH_PASSWORD_HELPER_DISPLAY_NAME ), authManTag(), INFO );
+    }
+  }
+
+  if ( ! ok )
+  {
+    QgsCredentials *creds = QgsCredentials::instance();
+    creds->lock();
+    ok = creds->getMasterPassword( pass, masterPasswordHashInDatabase() );
+    creds->unlock();
+  }
 
   if ( ok && !pass.isEmpty() && !masterPasswordSame( pass ) )
   {
     mMasterPass = pass;
+
+    if ( mUsePasswordHelper )
+    {
+      // Does the user want to store the password in the wallet?
+      QgsSettings settings;
+      if ( settings.value( QStringLiteral( "auth/use_password_helper" ), true ).toBool( ) )
+      {
+        passwordHelperWrite( pass );
+      }
+    }
     return true;
   }
   return false;

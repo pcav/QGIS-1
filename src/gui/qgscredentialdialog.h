@@ -52,6 +52,7 @@ class GUI_EXPORT QgsCredentialDialog : public QDialog, public QgsCredentials, pr
     void on_leMasterPass_textChanged( const QString &pass );
     void on_leMasterPassVerify_textChanged( const QString &pass );
     void on_chkbxEraseAuthDb_toggled( bool checked );
+    void on_chkbxUsePasswordHelper_toggled( bool checked );
 
   protected:
     virtual bool request( const QString &realm, QString &username, QString &password, const QString &message = QString::null ) override;

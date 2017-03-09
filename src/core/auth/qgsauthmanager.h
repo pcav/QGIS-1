@@ -37,6 +37,9 @@
 #include "qgsauthconfig.h"
 #include "qgsauthmethod.h"
 
+// Qt5KeyChain library
+#include "qt5keychain/keychain.h"
+
 namespace QCA
 {
   class Initializer;
@@ -544,6 +547,71 @@ class CORE_EXPORT QgsAuthManager : public QObject
 
   private:
 
+    //////////////////////////////////////////////////////////////////////////////
+    // Password Helper methods
+
+    //! Return name for logging
+    const QString passwordHelperName();
+
+    //! Print a debug message in QGIS
+    void  passwordHelperDebug( QString msg );
+
+    //! Read Master password from the wallet
+    QString passwordHelperRead();
+
+    //! Delete master password from wallet
+    bool passwordHelperDelete();
+
+    //! Store Master password in the wallet
+    bool passwordHelperWrite( QString password );
+
+    //! Error message getter
+    QString passwordHelperErrorMessage() { return mPasswordHelperErrorMessage; }
+
+    //! Use password helper getter
+    bool usePasswordHelper() { return mUsePasswordHelper; }
+
+    //! Use password helper setter
+    void setUsePasswordHelper( bool usePasswordHelper ) { mUsePasswordHelper = usePasswordHelper; }
+
+    //! Logging getter
+    bool passwordHelperLoggingEnabled() { return mPasswordHelperLoggingEnabled; }
+
+    //! Logging setter
+    void passwordHelperSetLoggingEnabled( bool loggingEnabled ) { mPasswordHelperLoggingEnabled = loggingEnabled; }
+
+    //! Read settings
+    void passwordHelperReadSettings();
+
+    //! Write settings
+    void passwordHelperWriteSettings();
+
+    //! Error message setter
+    void passwordHelperSetErrorMessage( QString errorMessage ) { mPasswordHelperErrorMessage = errorMessage; }
+
+    //! Clear error code and message
+    void passwordHelperClearErrors();
+
+    //! Error code setter
+    void passwordHelperSetErrorCode( QKeychain::Error errorCode ) { mPasswordHelperErrorCode = errorCode; }
+
+    //! Error code getter
+    QKeychain::Error passwordHelperErrorCode() { return mPasswordHelperErrorCode; }
+
+    //! Dirty flag setter
+    void passwordHelperSetIsDirty( bool dirty ) { mPasswordHelperIsDirty = dirty; }
+
+    //! Dirty flag getter
+    bool passwordHelperIsDirty( ) { return mPasswordHelperIsDirty; }
+
+    //! Ask the user, and then store
+    void passwordHelperSaveMasterPassword();
+
+    //! Process the error: show it and/or disable the password helper system in case of
+    //! access denied or no backend
+    void passwordHelperProcessError();
+
+
     bool createConfigTables();
 
     bool createCertTables();
@@ -637,6 +705,41 @@ class CORE_EXPORT QgsAuthManager : public QObject
     // cache of SSL errors to be ignored in network connections, per sha-hostport
     QHash<QString, QSet<QSslError::SslError> > mIgnoredSslErrorsCache;
 #endif
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Password Helper Variables
+
+    //! The user has chosen of using this plugin to store and retrieve the master pwd from his wallet
+    bool mUsePasswordHelper;
+
+    //! Master password verification has failed
+    bool mPasswordHelperVerificationError;
+
+    //! Store last error message
+    QString mPasswordHelperErrorMessage;
+
+    //! Store last error code (enum)
+    QKeychain::Error mPasswordHelperErrorCode;
+
+    //! Master password in memory is not in sync with the wallet
+    //! This could be for several reasons: error in reading, empty password, wrong password etc.
+    bool mPasswordHelperIsDirty;
+
+    //! Enable logging
+    bool mPasswordHelperLoggingEnabled;
+
+    //! Whether the keychain bridge failed to initialize
+    bool mPasswordHelperFailedInit;
+
+    //! The display name of the password helper (platform dependent)
+    static const QString AUTH_PASSWORD_HELPER_DISPLAY_NAME;
+
+    //! Master password name in the wallets
+    static const QLatin1String AUTH_PASSWORD_HELPER_KEY_NAME;
+
+    //! password helper folder in the wallets
+    static const QLatin1String AUTH_PASSWORD_FOLDER_DISPLAY_NAME;
+
 };
 
 #endif // QGSAUTHMANAGER_H

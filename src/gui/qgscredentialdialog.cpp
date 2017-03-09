@@ -19,9 +19,9 @@
 
 #include "qgsauthmanager.h"
 #include "qgslogger.h"
+#include "qgssettings.h"
 
 #include <QPushButton>
-#include <QSettings>
 #include <QThread>
 
 static QString invalidStyle_( const QString &selector = QStringLiteral( "QLineEdit" ) )
@@ -43,6 +43,8 @@ QgsCredentialDialog::QgsCredentialDialog( QWidget *parent, Qt::WindowFlags fl )
            Qt::BlockingQueuedConnection );
   mOkButton = buttonBox->button( QDialogButtonBox::Ok );
   leMasterPass->setPlaceholderText( tr( "Required" ) );
+  QgsSettings settings;
+  chkbxUsePasswordHelper->setChecked( settings.value( QStringLiteral( "auth/use_password_helper" ), true ).toBool() );
   leUsername->setFocus();
 }
 
@@ -262,5 +264,11 @@ void QgsCredentialDialog::on_chkbxEraseAuthDb_toggled( bool checked )
 {
   if ( checked )
     mOkButton->setEnabled( true );
+}
+
+void QgsCredentialDialog::on_chkbxUsePasswordHelper_toggled( bool checked )
+{
+  QgsSettings settings;
+  settings.setValue( QStringLiteral( "auth/use_password_helper" ), checked );
 }
 

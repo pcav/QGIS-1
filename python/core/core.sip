@@ -188,7 +188,6 @@
 // %Include auth/qgsauthcrypto.sip
 %Include auth/qgsauthmanager.sip
 %Include auth/qgsauthmethod.sip
-%Include auth/qgsauthpasswordhelper.sip
 
 %Include composer/qgsaddremoveitemcommand.sip
 %Include composer/qgsgroupungroupitemscommand.sip
