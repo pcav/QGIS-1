@@ -799,7 +799,7 @@ SET(QGIS_CORE_HDRS
   auth/qgsauthmethod.h
   auth/qgsauthmethodmetadata.h
   auth/qgsauthmethodregistry.h
-  auth/qgsauthpasswordhelper.h
+  #auth/qgsauthpasswordhelper.h
 
   diagram/qgsdiagram.h
   diagram/qgspiediagram.h
@@ -1059,7 +1059,7 @@ TARGET_LINK_LIBRARIES(qgis_core
   ${OPTIONAL_QTWEBKIT}
   ${QT_QTSQL_LIBRARY}
   ${QCA_LIBRARY}
-  ${QTKEYCHAIN_LIBRARY}
+  ${QT5KEYCHAIN_LIBRARY}
   ${PROJ_LIBRARY}
   ${GEOS_LIBRARY}
   ${GDAL_LIBRARY}

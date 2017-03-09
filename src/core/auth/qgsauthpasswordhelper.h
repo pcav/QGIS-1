@@ -26,8 +26,8 @@
 //QGIS includes
 #include "qgis_core.h"
 
-// QtKeyChain library
-#include "qtkeychain/keychain.h"
+// Qt5KeyChain library
+#include "qt5keychain/keychain.h"
 
 
 /**
