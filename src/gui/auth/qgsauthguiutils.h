@@ -80,6 +80,16 @@ class GUI_EXPORT QgsAuthGuiUtils
 
     //! Open file dialog for auth associated widgets
     static QString getOpenFileName( QWidget *parent, const QString &title, const QString &extfilter );
+
+    //! Remove master password from wallet
+    static void passwordHelperDelete( QgsMessageBar *msgbar, int timeout = 0, QWidget *parent = nullptr );
+
+    //! Store master password into the wallet
+    static void passwordHelperSync( QgsMessageBar *msgbar, int timeout = 0 );
+
+    //! Toggle password helper (enable/disable)
+    static void passwordHelperEnable( bool enable, QgsMessageBar *msgbar, int timeout = 0 );
+
 };
 
 #endif // QGSAUTHGUIUTILS_H

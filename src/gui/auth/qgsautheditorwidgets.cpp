@@ -152,12 +152,27 @@ void QgsAuthEditorWidgets::setupUtilitiesMenu()
   mActionRemoveAuthConfigs = new QAction( QStringLiteral( "Remove all authentication configurations" ), this );
   mActionEraseAuthDatabase = new QAction( QStringLiteral( "Erase authentication database" ), this );
 
-  connect( mActionSetMasterPassword, SIGNAL( triggered() ), this, SLOT( setMasterPassword() ) );
-  connect( mActionClearCachedMasterPassword, SIGNAL( triggered() ), this, SLOT( clearCachedMasterPassword() ) );
-  connect( mActionResetMasterPassword, SIGNAL( triggered() ), this, SLOT( resetMasterPassword() ) );
-  connect( mActionClearCachedAuthConfigs, SIGNAL( triggered() ), this, SLOT( clearCachedAuthenticationConfigs() ) );
-  connect( mActionRemoveAuthConfigs, SIGNAL( triggered() ), this, SLOT( removeAuthenticationConfigs() ) );
-  connect( mActionEraseAuthDatabase, SIGNAL( triggered() ), this, SLOT( eraseAuthenticationDatabase() ) );
+  mActionPasswordHelperSync = new QAction( tr( "Store/update the master password in your %1" )
+      .arg( QgsAuthManager::AUTH_PASSWORD_HELPER_DISPLAY_NAME ), this );
+  mActionPasswordHelperDelete = new QAction( tr( "Clear the master password from your %1" )
+      .arg( QgsAuthManager::AUTH_PASSWORD_HELPER_DISPLAY_NAME ), this );
+  mActionPasswordHelperEnable = new QAction( tr( "Enable the integration with the %1" )
+      .arg( QgsAuthManager::AUTH_PASSWORD_HELPER_DISPLAY_NAME ), this );
+
+  mActionPasswordHelperEnable->setCheckable( true );
+  mActionPasswordHelperEnable->setChecked( QgsAuthManager::instance()->passwordHelperEnabled( ) );
+
+  connect( mActionSetMasterPassword, &QAction::triggered, this, &QgsAuthEditorWidgets::setMasterPassword );
+  connect( mActionClearCachedMasterPassword, &QAction::triggered, this, &QgsAuthEditorWidgets::clearCachedMasterPassword );
+  connect( mActionResetMasterPassword, &QAction::triggered, this, &QgsAuthEditorWidgets::resetMasterPassword );
+  connect( mActionClearCachedAuthConfigs, &QAction::triggered, this, &QgsAuthEditorWidgets::clearCachedAuthenticationConfigs );
+  connect( mActionRemoveAuthConfigs, &QAction::triggered, this, &QgsAuthEditorWidgets::removeAuthenticationConfigs );
+  connect( mActionEraseAuthDatabase, &QAction::triggered, this, &QgsAuthEditorWidgets::eraseAuthenticationDatabase );
+
+  connect( mActionPasswordHelperSync, &QAction::triggered, this, &QgsAuthEditorWidgets::passwordHelperSync );
+  connect( mActionPasswordHelperDelete, &QAction::triggered, this, &QgsAuthEditorWidgets::passwordHelperDelete );
+  connect( mActionPasswordHelperEnable, &QAction::triggered, this, &QgsAuthEditorWidgets::passwordHelperEnableTriggered );
+
 
   mAuthUtilitiesMenu = new QMenu( this );
   mAuthUtilitiesMenu->addAction( mActionSetMasterPassword );
@@ -168,6 +183,10 @@ void QgsAuthEditorWidgets::setupUtilitiesMenu()
   mAuthUtilitiesMenu->addAction( mActionRemoveAuthConfigs );
   mAuthUtilitiesMenu->addSeparator();
   mAuthUtilitiesMenu->addAction( mActionEraseAuthDatabase );
+  mAuthUtilitiesMenu->addSeparator();
+  mAuthUtilitiesMenu->addAction( mActionPasswordHelperEnable );
+  mAuthUtilitiesMenu->addAction( mActionPasswordHelperSync );
+  mAuthUtilitiesMenu->addAction( mActionPasswordHelperDelete );
 
   btnAuthUtilities->setMenu( mAuthUtilitiesMenu );
 }
@@ -206,6 +225,22 @@ void QgsAuthEditorWidgets::authMessageOut( const QString &message, const QString
 {
   int levelint = ( int )level;
   messageBar()->pushMessage( authtag, message, ( QgsMessageBar::MessageLevel )levelint, 7 );
+}
+
+void QgsAuthEditorWidgets::passwordHelperDelete()
+{
+  QgsAuthGuiUtils::passwordHelperDelete( messageBar(), messageTimeout(), this );
+}
+
+void QgsAuthEditorWidgets::passwordHelperSync()
+{
+  QgsAuthGuiUtils::passwordHelperSync( messageBar(), messageTimeout() );
+}
+
+void QgsAuthEditorWidgets::passwordHelperEnableTriggered()
+{
+  // Only fire on real changes
+  QgsAuthGuiUtils::passwordHelperEnable( mActionPasswordHelperEnable->isChecked(), messageBar(), messageTimeout() );
 }
 
 QgsMessageBar *QgsAuthEditorWidgets::messageBar()

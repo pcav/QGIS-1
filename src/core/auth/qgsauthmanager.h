@@ -499,6 +499,25 @@ class CORE_EXPORT QgsAuthManager : public QObject
     //! Return pointer to mutex
     QMutex *mutex() { return mMutex; }
 
+    //! Error message getter
+    QString passwordHelperErrorMessage() { return mPasswordHelperErrorMessage; }
+
+    //! Delete master password from wallet
+    bool passwordHelperDelete();
+
+    //! Password helper enabled getter
+    bool passwordHelperEnabled();
+
+    //! Password helper enabled setter
+    void passwordHelperEnable( bool enable );
+
+    //! Store the password manager into the wallet
+    bool passwordHelperSync( );
+
+    //! The display name of the password helper (platform dependent)
+    static const QString AUTH_PASSWORD_HELPER_DISPLAY_NAME;
+
+
   signals:
 
     /**
@@ -528,6 +547,7 @@ class CORE_EXPORT QgsAuthManager : public QObject
 
     //! Clear an authentication config from its associated authentication method cache
     void clearCachedConfig( const QString &authcfg );
+
 
   private slots:
     void writeToConsole( const QString &message, const QString &tag = QString(), QgsAuthManager::MessageLevel level = INFO );
@@ -559,20 +579,8 @@ class CORE_EXPORT QgsAuthManager : public QObject
     //! Read Master password from the wallet
     QString passwordHelperRead();
 
-    //! Delete master password from wallet
-    bool passwordHelperDelete();
-
     //! Store Master password in the wallet
     bool passwordHelperWrite( QString password );
-
-    //! Error message getter
-    QString passwordHelperErrorMessage() { return mPasswordHelperErrorMessage; }
-
-    //! Use password helper getter
-    bool usePasswordHelper() { return mUsePasswordHelper; }
-
-    //! Use password helper setter
-    void setUsePasswordHelper( bool usePasswordHelper ) { mUsePasswordHelper = usePasswordHelper; }
 
     //! Logging getter
     bool passwordHelperLoggingEnabled() { return mPasswordHelperLoggingEnabled; }
@@ -591,12 +599,6 @@ class CORE_EXPORT QgsAuthManager : public QObject
 
     //! Clear error code and message
     void passwordHelperClearErrors();
-
-    //! Error code setter
-    void passwordHelperSetErrorCode( QKeychain::Error errorCode ) { mPasswordHelperErrorCode = errorCode; }
-
-    //! Error code getter
-    QKeychain::Error passwordHelperErrorCode() { return mPasswordHelperErrorCode; }
 
     //! Dirty flag setter
     void passwordHelperSetIsDirty( bool dirty ) { mPasswordHelperIsDirty = dirty; }
@@ -709,9 +711,6 @@ class CORE_EXPORT QgsAuthManager : public QObject
     //////////////////////////////////////////////////////////////////////////////
     // Password Helper Variables
 
-    //! The user has chosen of using this plugin to store and retrieve the master pwd from his wallet
-    bool mUsePasswordHelper;
-
     //! Master password verification has failed
     bool mPasswordHelperVerificationError;
 
@@ -730,9 +729,6 @@ class CORE_EXPORT QgsAuthManager : public QObject
 
     //! Whether the keychain bridge failed to initialize
     bool mPasswordHelperFailedInit;
-
-    //! The display name of the password helper (platform dependent)
-    static const QString AUTH_PASSWORD_HELPER_DISPLAY_NAME;
 
     //! Master password name in the wallets
     static const QLatin1String AUTH_PASSWORD_HELPER_KEY_NAME;

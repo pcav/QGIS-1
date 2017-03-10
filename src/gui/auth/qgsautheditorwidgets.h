@@ -88,6 +88,15 @@ class GUI_EXPORT QgsAuthEditorWidgets : public QWidget, private Ui::QgsAuthEdito
     //! Relay messages to widget's messagebar
     void authMessageOut( const QString &message, const QString &authtag, QgsAuthManager::MessageLevel level );
 
+    //! Remove master password from wallet
+    void  passwordHelperDelete( );
+
+    //! Store master password into the wallet
+    void  passwordHelperSync( );
+
+    //! Toggle password helper (enable/disable)
+    void passwordHelperEnableTriggered( );
+
   private:
     void setupUtilitiesMenu();
 
@@ -101,6 +110,9 @@ class GUI_EXPORT QgsAuthEditorWidgets : public QWidget, private Ui::QgsAuthEdito
     QAction *mActionClearCachedAuthConfigs = nullptr;
     QAction *mActionRemoveAuthConfigs = nullptr;
     QAction *mActionEraseAuthDatabase = nullptr;
+    QAction *mActionPasswordHelperDelete = nullptr;
+    QAction *mActionPasswordHelperSync = nullptr;
+    QAction *mActionPasswordHelperEnable = nullptr;
 };
 
 #endif // QGSAUTHEDITORWIDGETS_H

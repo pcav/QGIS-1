@@ -43,8 +43,7 @@ QgsCredentialDialog::QgsCredentialDialog( QWidget *parent, Qt::WindowFlags fl )
            Qt::BlockingQueuedConnection );
   mOkButton = buttonBox->button( QDialogButtonBox::Ok );
   leMasterPass->setPlaceholderText( tr( "Required" ) );
-  QgsSettings settings;
-  chkbxUsePasswordHelper->setChecked( settings.value( QStringLiteral( "auth/use_password_helper" ), true ).toBool() );
+  chkbxPasswordHelperEnable->setChecked( QgsAuthManager::instance()->passwordHelperEnabled( ) );
   leUsername->setFocus();
 }
 
@@ -268,7 +267,6 @@ void QgsCredentialDialog::on_chkbxEraseAuthDb_toggled( bool checked )
 
 void QgsCredentialDialog::on_chkbxUsePasswordHelper_toggled( bool checked )
 {
-  QgsSettings settings;
-  settings.setValue( QStringLiteral( "auth/use_password_helper" ), checked );
+  QgsAuthManager::instance()->passwordHelperEnable( checked );
 }
 
